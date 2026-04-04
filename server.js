@@ -125,8 +125,8 @@ app.get('/api/timeline', async (req, res) => {
     let maxId = null;
     let reachedCutoff = false;
 
-    // Paginate until we've fetched all posts in the last 24h (or hit 300 posts)
-    while (!reachedCutoff && posts.length < 300) {
+    // Paginate until we've fetched all posts in the last 24h
+    while (!reachedCutoff) {
       const params = { limit: 40 };
       if (maxId) params.max_id = maxId;
 
@@ -178,8 +178,8 @@ app.get('/api/timeline', async (req, res) => {
       maxId = batch[batch.length - 1].id;
     }
 
-    // Fetch link previews for unique links (limit to 15 total to avoid overload)
-    const allLinks = [...new Set(posts.flatMap(p => p.links))].slice(0, 15);
+    // Fetch link previews for unique links (cap at 40 to avoid overload)
+    const allLinks = [...new Set(posts.flatMap(p => p.links))].slice(0, 40);
     const linkPreviews = {};
 
     await Promise.allSettled(
@@ -234,6 +234,12 @@ app.post('/api/summarize', async (req, res) => {
     return entry;
   }).join('\n\n---\n\n');
 
+  // Claude's context window is large but the digest can get huge with many posts.
+  // Truncate at ~120k chars (well within the 200k token limit) to stay safe.
+  const truncatedDigest = digest.length > 120000
+    ? digest.slice(0, 120000) + '\n\n[digest truncated due to length]'
+    : digest;
+
   const systemPrompt = `You are a warm, witty, and enthusiastic narrator who recaps social media timelines. Your style is like a clever friend catching you up over coffee — colorful, vivid, occasionally funny, and genuinely engaged with the content. You notice patterns, highlight interesting links, quote memorable lines, and capture the overall vibe of the conversation. You use concrete names and topics, never vague summaries.`;
 
   const userPrompt = `Here are ${posts.length} posts from my Mastodon home timeline in the last 24 hours. Write a fun, colorful narrative summary in **1–2 short paragraphs** that captures:
@@ -246,7 +252,7 @@ Make it feel alive and personal. Use specific names, quote fun phrases, and be d
 
 Here's the timeline:
 
-${digest}`;
+${truncatedDigest}`;
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
