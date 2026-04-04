@@ -440,6 +440,10 @@
           throw new Error(sumData.error || 'Failed to generate summary');
         }
 
+        if (!sumData.narrative) {
+          throw new Error('Claude returned an empty response. Raw: ' + JSON.stringify(sumData));
+        }
+
         fullMarkdown = sumData.narrative;
 
         const outputArea = document.getElementById('outputArea');

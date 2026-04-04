@@ -251,6 +251,7 @@ ${digest}`;
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+    console.log(`[summarize] calling Claude with ${posts.length} posts`);
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
@@ -258,9 +259,12 @@ ${digest}`;
       messages: [{ role: 'user', content: userPrompt }]
     });
 
+    console.log(`[summarize] stop_reason=${message.stop_reason} content_blocks=${message.content.length}`);
     const narrative = message.content[0]?.text || '';
+    console.log(`[summarize] narrative length=${narrative.length}`);
     res.json({ narrative });
   } catch (err) {
+    console.error(`[summarize] error: ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });
