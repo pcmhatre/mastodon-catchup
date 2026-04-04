@@ -242,13 +242,13 @@ app.post('/api/summarize', async (req, res) => {
 
   const systemPrompt = `You are a warm, witty, and enthusiastic narrator who recaps social media timelines. Your style is like a clever friend catching you up over coffee — colorful, vivid, occasionally funny, and genuinely engaged with the content. You notice patterns, highlight interesting links, quote memorable lines, and capture the overall vibe of the conversation. You use concrete names and topics, never vague summaries.`;
 
-  const userPrompt = `Here are ${posts.length} posts from my Mastodon home timeline in the last 24 hours. Write a fun, colorful narrative summary in **1–2 short paragraphs** that captures:
+  const userPrompt = `Here are ${posts.length} posts from my Mastodon home timeline in the last 24 hours. Write a fun, colorful narrative summary broken into **4–6 short paragraphs** (2–4 sentences each) that captures:
 - The main topics and vibes people are discussing
 - Any notable links or articles being shared (with context)
 - Interesting images or visual content (from alt text)
 - The overall energy and mood of the timeline
 
-Make it feel alive and personal. Use specific names, quote fun phrases, and be descriptive. Then add a final "**Key topics:**" line with the main themes as a comma-separated list.
+Keep the total length the same as you would for a 1–2 paragraph summary — just split it into more, shorter paragraphs so it's easier to read. Make it feel alive and personal. Use specific names, quote fun phrases, and be descriptive. Then add a final "**Key topics:**" line with the main themes as a comma-separated list.
 
 Here's the timeline:
 
