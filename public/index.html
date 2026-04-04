@@ -427,55 +427,26 @@
         document.getElementById('metaPosts').textContent = `📝 ${count} posts`;
         document.getElementById('metaLinks').textContent = `🔗 ${linkCount} links fetched`;
 
-        // Step 2: Stream summary
+        // Step 2: Generate summary
         const sumRes = await fetch('/api/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ posts, linkPreviews })
         });
 
+        const sumData = await sumRes.json();
+
         if (!sumRes.ok) {
-          const err = await sumRes.json();
-          throw new Error(err.error || 'Failed to generate summary');
+          throw new Error(sumData.error || 'Failed to generate summary');
         }
 
-        // Show output section, start streaming into textarea
+        fullMarkdown = sumData.narrative;
+
         const outputArea = document.getElementById('outputArea');
         document.getElementById('outputSection').classList.add('visible');
-
-        const reader = sumRes.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop(); // keep incomplete line
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const payload = line.slice(6).trim();
-            if (payload === '[DONE]') continue;
-
-            try {
-              const { text, error } = JSON.parse(payload);
-              if (error) throw new Error(error);
-              if (text) {
-                fullMarkdown += text;
-                outputArea.value = fullMarkdown;
-                // Auto-resize
-                outputArea.style.height = 'auto';
-                outputArea.style.height = Math.min(outputArea.scrollHeight, 520) + 'px';
-                outputArea.scrollTop = outputArea.scrollHeight;
-              }
-            } catch (parseErr) {
-              // ignore parse errors on stream chunks
-            }
-          }
-        }
+        outputArea.value = fullMarkdown;
+        outputArea.style.height = 'auto';
+        outputArea.style.height = Math.min(outputArea.scrollHeight, 520) + 'px';
 
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
         document.getElementById('metaTime').textContent = `⏱ ${elapsed}s`;
