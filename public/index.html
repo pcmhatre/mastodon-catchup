@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mastodon Catchup</title>
+  <style>
+    :root {
+      --purple: #6364ff;
+      --teal: #20c997;
+      --pink: #ff6b9d;
+      --yellow: #ffd43b;
+      --orange: #ff922b;
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #16213e;
+      --border: #2a2a4a;
+      --text: #e8e8f0;
+      --text-dim: #8888aa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--purple), var(--pink), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--text-dim);
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h2 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    /* Config status */
+    .config-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .config-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+
+    .config-badge.ok { border-color: var(--teal); color: var(--teal); }
+    .config-badge.err { border-color: var(--pink); color: var(--pink); }
+    .config-badge .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.4rem;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: white;
+      width: 100%;
+      justify-content: center;
+      padding: 0.85rem;
+      font-size: 1.05rem;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      opacity: 0.9;
+      box-shadow: 0 4px 20px rgba(99, 100, 255, 0.4);
+    }
+
+    .btn-copy {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      padding: 0.45rem 0.9rem;
+    }
+
+    .btn-copy:hover:not(:disabled) {
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    .btn-copy.copied {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    /* Progress/status */
+    .status-bar {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem 1.1rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .status-bar.visible { display: flex; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .post-count {
+      margin-left: auto;
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--purple);
+    }
+
+    /* Output area */
+    .output-section {
+      display: none;
+    }
+
+    .output-section.visible { display: block; }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .output-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+
+    .copy-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .output-textarea {
+      width: 100%;
+      min-height: 200px;
+      max-height: 520px;
+      resize: vertical;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .output-textarea:focus {
+      border-color: var(--purple);
+    }
+
+    .output-meta {
+      margin-top: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .output-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* Error */
+    .error-box {
+      display: none;
+      background: rgba(255, 107, 157, 0.1);
+      border: 1px solid rgba(255, 107, 157, 0.4);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      font-size: 0.88rem;
+      color: var(--pink);
+      margin-bottom: 1rem;
+    }
+
+    .error-box.visible { display: block; }
+
+    /* Cursor blink while streaming */
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--purple);
+      vertical-align: text-bottom;
+      margin-left: 1px;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🐘 Mastodon Catchup</h1>
+    <p>A narrative summary of your last 24 hours</p>
+  </header>
+
+  <div class="card">
+    <h2>Configuration</h2>
+    <div class="config-row" id="configRow">
+      <div class="config-badge" id="badge-instance">
+        <span class="dot"></span> Checking...
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-primary" id="catchupBtn" onclick="runCatchup()">
+      ✨ Catch me up!
+    </button>
+  </div>
+
+  <div id="statusBar" class="status-bar">
+    <div class="spinner"></div>
+    <span id="statusText">Loading timeline...</span>
+    <span class="post-count" id="postCount"></span>
+  </div>
+
+  <div id="errorBox" class="error-box"></div>
+
+  <div class="output-section" id="outputSection">
+    <div class="output-header">
+      <span class="output-label">Your timeline narrative</span>
+      <div class="copy-buttons">
+        <button class="btn btn-copy" id="copyMd" onclick="copyAs('markdown')">
+          Copy Markdown
+        </button>
+        <button class="btn btn-copy" id="copyText" onclick="copyAs('text')">
+          Copy Plain Text
+        </button>
+      </div>
+    </div>
+    <textarea class="output-textarea" id="outputArea" readonly placeholder="Your narrative will appear here..."></textarea>
+    <div class="output-meta">
+      <span id="metaPosts"></span>
+      <span id="metaLinks"></span>
+      <span id="metaTime"></span>
+    </div>
+  </div>
+
+  <footer>
+    Powered by Mastodon API + Claude · posts from the last 24h
+  </footer>
+
+  <script>
+    let isRunning = false;
+    let fullMarkdown = '';
+    let startTime = null;
+
+    // Check config on load
+    async function checkConfig() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        const { hasMastodonInstance, hasMastodonToken, hasAnthropicKey } = data.config;
+        const row = document.getElementById('configRow');
+        row.innerHTML = '';
+
+        const badges = [
+          [hasMastodonInstance, 'Mastodon instance'],
+          [hasMastodonToken, 'Access token'],
+          [hasAnthropicKey, 'Anthropic API key']
+        ];
+
+        let allOk = true;
+        for (const [ok, label] of badges) {
+          if (!ok) allOk = false;
+          const b = document.createElement('div');
+          b.className = `config-badge ${ok ? 'ok' : 'err'}`;
+          b.innerHTML = `<span class="dot"></span> ${label}`;
+          row.appendChild(b);
+        }
+
+        document.getElementById('catchupBtn').disabled = !allOk;
+        if (!allOk) {
+          showError('Some config is missing. Add MASTODON_INSTANCE, MASTODON_ACCESS_TOKEN, and ANTHROPIC_API_KEY to your .env file, then restart the server.');
+        }
+      } catch (e) {
+        showError('Could not connect to server: ' + e.message);
+      }
+    }
+
+    function setStatus(text, count) {
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('postCount').textContent = count || '';
+      document.getElementById('statusBar').classList.add('visible');
+    }
+
+    function hideStatus() {
+      document.getElementById('statusBar').classList.remove('visible');
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('errorBox');
+      box.textContent = msg;
+      box.classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('errorBox').classList.remove('visible');
+    }
+
+    async function runCatchup() {
+      if (isRunning) return;
+      isRunning = true;
+      fullMarkdown = '';
+      startTime = Date.now();
+
+      const btn = document.getElementById('catchupBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Working on it...';
+      hideError();
+      document.getElementById('outputSection').classList.remove('visible');
+      document.getElementById('outputArea').value = '';
+
+      try {
+        // Step 1: Fetch timeline
+        setStatus('Fetching your Mastodon timeline...', '');
+        const timelineRes = await fetch('/api/timeline');
+
+        if (!timelineRes.ok) {
+          const err = await timelineRes.json();
+          throw new Error(err.error || 'Failed to fetch timeline');
+        }
+
+        const { posts, linkPreviews, count } = await timelineRes.json();
+
+        if (!count) {
+          throw new Error('No posts found in the last 24 hours.');
+        }
+
+        const linkCount = Object.keys(linkPreviews).length;
+        setStatus(`Generating narrative for ${count} posts...`, `${count} posts · ${linkCount} links`);
+
+        // Update meta
+        document.getElementById('metaPosts').textContent = `📝 ${count} posts`;
+        document.getElementById('metaLinks').textContent = `🔗 ${linkCount} links fetched`;
+
+        // Step 2: Stream summary
+        const sumRes = await fetch('/api/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ posts, linkPreviews })
+        });
+
+        if (!sumRes.ok) {
+          const err = await sumRes.json();
+          throw new Error(err.error || 'Failed to generate summary');
+        }
+
+        // Show output section, start streaming into textarea
+        const outputArea = document.getElementById('outputArea');
+        document.getElementById('outputSection').classList.add('visible');
+
+        const reader = sumRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // keep incomplete line
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const payload = line.slice(6).trim();
+            if (payload === '[DONE]') continue;
+
+            try {
+              const { text, error } = JSON.parse(payload);
+              if (error) throw new Error(error);
+              if (text) {
+                fullMarkdown += text;
+                outputArea.value = fullMarkdown;
+                // Auto-resize
+                outputArea.style.height = 'auto';
+                outputArea.style.height = Math.min(outputArea.scrollHeight, 520) + 'px';
+                outputArea.scrollTop = outputArea.scrollHeight;
+              }
+            } catch (parseErr) {
+              // ignore parse errors on stream chunks
+            }
+          }
+        }
+
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('metaTime').textContent = `⏱ ${elapsed}s`;
+        hideStatus();
+
+      } catch (err) {
+        hideStatus();
+        showError(err.message);
+      } finally {
+        isRunning = false;
+        btn.disabled = false;
+        btn.textContent = '✨ Catch me up!';
+      }
+    }
+
+    // Strip Markdown for plain text copy
+    function markdownToPlainText(md) {
+      return md
+        .replace(/\*\*(.+?)\*\*/g, '$1')   // bold
+        .replace(/\*(.+?)\*/g, '$1')         // italic
+        .replace(/^#+\s+/gm, '')             // headers
+        .replace(/`(.+?)`/g, '$1')           // inline code
+        .replace(/^\s*[-*+]\s+/gm, '• ')    // bullet lists
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // links → text
+        .trim();
+    }
+
+    async function copyAs(format) {
+      if (!fullMarkdown) return;
+
+      const content = format === 'markdown' ? fullMarkdown : markdownToPlainText(fullMarkdown);
+      const btnId = format === 'markdown' ? 'copyMd' : 'copyText';
+      const btn = document.getElementById(btnId);
+
+      try {
+        await navigator.clipboard.writeText(content);
+        btn.classList.add('copied');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = format === 'markdown' ? 'Copy Markdown' : 'Copy Plain Text';
+        }, 2000);
+      } catch {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = content;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    }
+
+    checkConfig();
+  </script>
+
+</body>
+</html>
