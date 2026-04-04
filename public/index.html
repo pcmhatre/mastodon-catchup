@@ -287,15 +287,6 @@
   </header>
 
   <div class="card">
-    <h2>Configuration</h2>
-    <div class="config-row" id="configRow">
-      <div class="config-badge" id="badge-instance">
-        <span class="dot"></span> Checking...
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
     <button class="btn btn-primary" id="catchupBtn" onclick="runCatchup()">
       ✨ Catch me up!
     </button>
@@ -344,27 +335,10 @@
         const res = await fetch('/api/health');
         const data = await res.json();
         const { hasMastodonInstance, hasMastodonToken, hasAnthropicKey } = data.config;
-        const row = document.getElementById('configRow');
-        row.innerHTML = '';
-
-        const badges = [
-          [hasMastodonInstance, 'Mastodon instance'],
-          [hasMastodonToken, 'Access token'],
-          [hasAnthropicKey, 'Anthropic API key']
-        ];
-
-        let allOk = true;
-        for (const [ok, label] of badges) {
-          if (!ok) allOk = false;
-          const b = document.createElement('div');
-          b.className = `config-badge ${ok ? 'ok' : 'err'}`;
-          b.innerHTML = `<span class="dot"></span> ${label}`;
-          row.appendChild(b);
-        }
-
+        const allOk = hasMastodonInstance && hasMastodonToken && hasAnthropicKey;
         document.getElementById('catchupBtn').disabled = !allOk;
         if (!allOk) {
-          showError('Some config is missing. Add MASTODON_INSTANCE, MASTODON_ACCESS_TOKEN, and ANTHROPIC_API_KEY to your .env file, then restart the server.');
+          showError('Server configuration is incomplete. Check your environment variables.');
         }
       } catch (e) {
         showError('Could not connect to server: ' + e.message);
