@@ -126,7 +126,9 @@ app.get('/api/timeline', async (req, res) => {
     let reachedCutoff = false;
 
     // Paginate until we've fetched all posts in the last 24h
+    let page = 0;
     while (!reachedCutoff) {
+      page++;
       const params = { limit: 40 };
       if (maxId) params.max_id = maxId;
 
@@ -139,11 +141,17 @@ app.get('/api/timeline', async (req, res) => {
         }
       );
 
-      if (!batch.length) break;
+      console.log(`[timeline] page=${page} batch=${batch.length} posts_so_far=${posts.length} maxId=${maxId}`);
+
+      if (!batch.length) {
+        console.log(`[timeline] stopped: empty batch on page ${page}`);
+        break;
+      }
 
       for (const status of batch) {
         const createdMs = new Date(status.created_at).getTime();
         if (createdMs < cutoffMs) {
+          console.log(`[timeline] stopped: hit cutoff on page ${page}, last post at ${status.created_at}`);
           reachedCutoff = true;
           break;
         }
