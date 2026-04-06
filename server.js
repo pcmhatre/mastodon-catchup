@@ -120,7 +120,8 @@ app.get('/api/timeline', async (req, res) => {
   }
 
   try {
-    const cutoffMs = Date.now() - 24 * 60 * 60 * 1000;
+    const hours = Math.min(Math.max(Number(req.query.hours) || 24, 1), 24);
+    const cutoffMs = Date.now() - hours * 60 * 60 * 1000;
     const posts = [];
     let maxId = null;
     let reachedCutoff = false;
@@ -250,7 +251,8 @@ app.post('/api/summarize', async (req, res) => {
 
   const systemPrompt = `You are a warm, witty, and enthusiastic narrator who recaps social media timelines. Your style is like a clever friend catching you up over coffee — colorful, vivid, occasionally funny, and genuinely engaged with the content. You notice patterns, highlight interesting links, quote memorable lines, and capture the overall vibe of the conversation. You use concrete names and topics, never vague summaries.`;
 
-  const userPrompt = `Here are ${posts.length} posts from my Mastodon home timeline in the last 24 hours. Write a fun, colorful narrative summary broken into **4–6 short paragraphs** (2–4 sentences each) that captures:
+  const hours = req.body.hours || 24;
+  const userPrompt = `Here are ${posts.length} posts from my Mastodon home timeline in the last ${hours} hours. Write a fun, colorful narrative summary broken into **4–6 short paragraphs** (2–4 sentences each) that captures:
 - The main topics and vibes people are discussing
 - Any notable links or articles being shared (with context)
 - Interesting images or visual content (from alt text)

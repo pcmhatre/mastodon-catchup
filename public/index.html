@@ -271,6 +271,37 @@
 
     @keyframes blink { 50% { opacity: 0; } }
 
+    /* Time range toggle */
+    .toggle-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn-toggle {
+      flex: 1;
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-toggle:hover {
+      border-color: var(--purple);
+      color: var(--text);
+    }
+
+    .btn-toggle.active {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border-color: transparent;
+      color: white;
+    }
+
     footer {
       margin-top: 2rem;
       font-size: 0.78rem;
@@ -287,6 +318,11 @@
   </header>
 
   <div class="card">
+    <div class="toggle-group">
+      <button class="btn-toggle" data-hours="6" onclick="setHours(6)">Last 6h</button>
+      <button class="btn-toggle active" data-hours="12" onclick="setHours(12)">Last 12h</button>
+      <button class="btn-toggle" data-hours="24" onclick="setHours(24)">Last 24h</button>
+    </div>
     <button class="btn btn-primary" id="catchupBtn" onclick="runCatchup()">
       ✨ Catch me up!
     </button>
@@ -328,6 +364,14 @@
     let isRunning = false;
     let fullMarkdown = '';
     let startTime = null;
+    let selectedHours = 12;
+
+    function setHours(h) {
+      selectedHours = h;
+      document.querySelectorAll('.btn-toggle').forEach(b => {
+        b.classList.toggle('active', Number(b.dataset.hours) === h);
+      });
+    }
 
     // Check config on load
     async function checkConfig() {
@@ -381,7 +425,7 @@
       try {
         // Step 1: Fetch timeline
         setStatus('Fetching your Mastodon timeline...', '');
-        const timelineRes = await fetch('/api/timeline');
+        const timelineRes = await fetch(`/api/timeline?hours=${selectedHours}`);
 
         if (!timelineRes.ok) {
           const err = await timelineRes.json();
@@ -405,7 +449,7 @@
         const sumRes = await fetch('/api/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ posts, linkPreviews })
+          body: JSON.stringify({ posts, linkPreviews, hours: selectedHours })
         });
 
         const sumData = await sumRes.json();
