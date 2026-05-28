@@ -2,8 +2,6 @@
 
 A web app that reads your Mastodon home timeline and uses Claude AI to generate a colorful, narrative summary of what everyone's been talking about — links, images, and all.
 
-![Mastodon Catchup screenshot](https://mastodon-catchup.vercel.app)
-
 ## Features
 
 - **Narrative summaries** — Claude writes a vivid, friendly recap in 4–6 short paragraphs, not a dry bullet list
