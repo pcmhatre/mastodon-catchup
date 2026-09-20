@@ -215,10 +215,11 @@ app.get('/api/probe', async (req, res) => {
   const instance = (process.env.MASTODON_INSTANCE || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
   if (!instance) return res.status(400).json({ error: 'MASTODON_INSTANCE not set' });
   try {
-    const r = await axios.get(`https://${instance}/api/v1/instance`, { timeout: 8000 });
-    res.json({ ok: true, instance, title: r.data?.title, version: r.data?.version });
+    const r = await fetch(`https://${instance}/api/v1/instance`, { signal: AbortSignal.timeout(8000) });
+    const data = await r.json();
+    res.json({ ok: true, instance, title: data?.title, version: data?.version });
   } catch (err) {
-    res.status(500).json({ ok: false, instance, code: err.code, message: err.message, httpStatus: err.response?.status });
+    res.status(500).json({ ok: false, instance, code: err.code, message: err.message });
   }
 });
 
