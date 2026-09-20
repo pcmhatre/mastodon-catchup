@@ -49,8 +49,8 @@ function extractLinks(html) {
 async function fetchLinkPreview(url) {
   try {
     const response = await axios.get(url, {
-      timeout: 6000,
-      maxContentLength: 300_000,
+      timeout: 3000,
+      maxContentLength: 150_000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; MastodonCatchup/1.0; +https://github.com/mastodon-catchup)',
         'Accept': 'text/html,application/xhtml+xml'
@@ -128,7 +128,7 @@ app.get('/api/timeline', async (req, res) => {
 
     // Paginate until we've fetched all posts in the last 24h
     let page = 0;
-    while (!reachedCutoff) {
+    while (!reachedCutoff && page < 20) {
       page++;
       const params = { limit: 40 };
       if (maxId) params.max_id = maxId;
@@ -188,7 +188,7 @@ app.get('/api/timeline', async (req, res) => {
     }
 
     // Fetch link previews for unique links (cap at 40 to avoid overload)
-    const allLinks = [...new Set(posts.flatMap(p => p.links))].slice(0, 40);
+    const allLinks = [...new Set(posts.flatMap(p => p.links))].slice(0, 20);
     const linkPreviews = {};
 
     await Promise.allSettled(
