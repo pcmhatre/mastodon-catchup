@@ -210,19 +210,6 @@ app.get('/api/timeline', async (req, res) => {
   }
 });
 
-// GET /api/probe — test raw connectivity to the Mastodon instance
-app.get('/api/probe', async (req, res) => {
-  const instance = (process.env.MASTODON_INSTANCE || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
-  if (!instance) return res.status(400).json({ error: 'MASTODON_INSTANCE not set' });
-  try {
-    const r = await fetch(`https://${instance}/api/v1/instance`, { signal: AbortSignal.timeout(8000) });
-    const data = await r.json();
-    res.json({ ok: true, instance, title: data?.title, version: data?.version });
-  } catch (err) {
-    res.status(500).json({ ok: false, instance, code: err.code, message: err.message });
-  }
-});
-
 // POST /api/summarize — stream a Claude narrative of the timeline
 app.post('/api/summarize', async (req, res) => {
   const { posts, linkPreviews } = req.body;
