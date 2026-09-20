@@ -270,7 +270,7 @@ ${truncatedDigest}`;
     console.log(`[summarize] calling Claude with ${posts.length} posts`);
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+      max_tokens: 2000,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     });

@@ -359,8 +359,8 @@
     </div>
   </div>
 
-  <footer>
-    Powered by Mastodon API + Claude · posts from the last 24h
+  <footer id="footer">
+    Powered by Mastodon API + Claude · posts from the last 12h
   </footer>
 
   <script>
@@ -374,6 +374,8 @@
       document.querySelectorAll('.btn-toggle').forEach(b => {
         b.classList.toggle('active', Number(b.dataset.hours) === h);
       });
+      document.getElementById('footer').textContent =
+        `Powered by Mastodon API + Claude · posts from the last ${h}h`;
     }
 
     // Check config on load
@@ -438,7 +440,7 @@
         const { posts, linkPreviews, count } = await timelineRes.json();
 
         if (!count) {
-          throw new Error('No posts found in the last 24 hours.');
+          throw new Error(`No posts found in the last ${selectedHours} hours.`);
         }
 
         const linkCount = Object.keys(linkPreviews).length;
