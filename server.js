@@ -112,7 +112,7 @@ app.get('/api/health', (_req, res) => {
 
 // GET /api/timeline — fetch home timeline posts from the last 24 hours
 app.get('/api/timeline', async (req, res) => {
-  const instance = process.env.MASTODON_INSTANCE;
+  const instance = (process.env.MASTODON_INSTANCE || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
   const token = process.env.MASTODON_ACCESS_TOKEN;
 
   if (!instance || !token) {
