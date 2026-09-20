@@ -136,7 +136,10 @@ app.get('/api/timeline', async (req, res) => {
       const { data: batch } = await axios.get(
         `https://${instance}/api/v1/timelines/home`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+          },
           params,
           timeout: 12000
         }
