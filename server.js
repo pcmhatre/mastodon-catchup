@@ -130,20 +130,21 @@ app.get('/api/timeline', async (req, res) => {
     let page = 0;
     while (!reachedCutoff && page < 20) {
       page++;
-      const params = { limit: 40 };
-      if (maxId) params.max_id = maxId;
+      const timelineUrl = new URL(`https://${instance}/api/v1/timelines/home`);
+      timelineUrl.searchParams.set('limit', '40');
+      if (maxId) timelineUrl.searchParams.set('max_id', maxId);
 
-      const { data: batch } = await axios.get(
-        `https://${instance}/api/v1/timelines/home`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
-          },
-          params,
-          timeout: 12000
-        }
-      );
+      const timelineRes = await fetch(timelineUrl.toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(12000)
+      });
+      if (!timelineRes.ok) {
+        const body = await timelineRes.text();
+        const err = new Error(`Mastodon API error ${timelineRes.status}: ${body}`);
+        err.response = { status: timelineRes.status, data: { error: body } };
+        throw err;
+      }
+      const batch = await timelineRes.json();
 
       console.log(`[timeline] page=${page} batch=${batch.length} posts_so_far=${posts.length} maxId=${maxId}`);
 
