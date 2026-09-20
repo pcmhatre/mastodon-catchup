@@ -203,8 +203,21 @@ app.get('/api/timeline', async (req, res) => {
 
     res.json({ posts, linkPreviews, count: posts.length });
   } catch (err) {
+    console.error(`[timeline] error code=${err.code} message=${err.message} status=${err.response?.status}`);
     const status = err.response?.status || 500;
-    res.status(status).json({ error: err.response?.data?.error || err.message });
+    res.status(status).json({ error: err.response?.data?.error || err.message, code: err.code });
+  }
+});
+
+// GET /api/probe — test raw connectivity to the Mastodon instance
+app.get('/api/probe', async (req, res) => {
+  const instance = (process.env.MASTODON_INSTANCE || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+  if (!instance) return res.status(400).json({ error: 'MASTODON_INSTANCE not set' });
+  try {
+    const r = await axios.get(`https://${instance}/api/v1/instance`, { timeout: 8000 });
+    res.json({ ok: true, instance, title: r.data?.title, version: r.data?.version });
+  } catch (err) {
+    res.status(500).json({ ok: false, instance, code: err.code, message: err.message, httpStatus: err.response?.status });
   }
 });
 
