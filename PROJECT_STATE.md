@@ -67,6 +67,11 @@ mastodon-catchup/
 - **`maxDuration` placement.** Set inside `builds[].config` in `vercel.json`, not at the top level. Effective value is 60s.
 - **Env vars need redeployment.** Adding/changing env vars in the Vercel dashboard does not apply to existing deployments. A new push (or manual redeploy) is required.
 - **`node` not in shell PATH.** On this machine, `/usr/local/bin/node` exists but `#!/usr/bin/env node` shebangs fail unless `$HOME/.local/bin/node` is symlinked. The Vercel CLI was installed with `npm install -g vercel --ignore-scripts` and run as `PATH="$HOME/.local/bin:$PATH" $HOME/.npm-global/bin/vercel`.
+- **`vercel.json` modern `functions` format doesn't work for root-level Express.** The `functions` key expects files under `api/`. Stick with the legacy `builds`/`routes` format for a root-level `server.js`.
+
+### Mastodon API / Networking
+- **Use native `fetch` for Mastodon API calls, not axios.** `social.lol` (and likely other instances behind Cloudflare or similar WAFs) returns `ECONNRESET` for requests made with axios. The cause is axios's default headers (`Accept: application/json, text/plain, */*`, `Connection: keep-alive`, etc.) triggering firewall rules. Native Node.js `fetch` (Node 18+) sends a minimal request and is not blocked. Keep axios only for link preview fetching where its streaming/size-limit features are useful.
+- **`MASTODON_INSTANCE` should be the bare hostname** — e.g. `social.lol`, no `https://` prefix, no trailing slash. The code strips these defensively, but set it correctly in Vercel to avoid confusion.
 
 ### Anthropic API
 - **Separate billing from Claude Pro.** The claude.ai Pro subscription does not cover API usage. Credits must be purchased at console.anthropic.com under the same workspace as the API key in use.
@@ -74,9 +79,10 @@ mastodon-catchup/
 
 ### Mastodon API
 - **No handle needed.** The access token is tied to the account; `/api/v1/timelines/home` returns that account's home timeline automatically.
-- **Boosts use `status.created_at`** (the boost time), not `status.reblog.created_at` (original post time), for the 24h cutoff check. This is intentional.
+- **Boosts use `status.created_at`** (the boost time), not `status.reblog.created_at` (original post time), for the cutoff check. This is intentional.
 - **Link extraction skips hashtags/mentions** by checking the `class` attribute on `<a>` tags (`hashtag`, `mention`).
-- **Some instances cap home timeline depth** server-side (often ~400 statuses in Redis), so pagination stops before the 24h cutoff is reached. This is not a code bug.
+- **Some instances cap home timeline depth** server-side (often ~400 statuses in Redis), so pagination stops before the cutoff is reached. This is not a code bug.
+- **Use native fetch, not axios, for timeline requests.** See Networking note above.
 
 ### Claude Prompt
 - **Digest size.** With many posts, the prompt can get large. Truncation at 120,000 chars is applied before sending to Claude.
